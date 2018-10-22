@@ -227,13 +227,13 @@ class _App extends Component{
       <Router>
       <div>
       {
-        user && user.is_admin ? <Link to='/users'>Users</Link> : null
+        user && user.is_admin ? <Link to='/users'>Admin</Link> : null
       }
       {
         user.id ? (
             <Fragment>
             <Route component={ LoggedIn } />
-            <Route component={ Users } component={ Users } />
+            <Route path='/users' component={ Users } component={ Users } />
             </Fragment>
             ): (
             <Route component={ Login } />
