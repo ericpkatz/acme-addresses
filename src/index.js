@@ -1,19 +1,32 @@
-import React, { Component}  from 'react';
+import React, { Fragment, Component}  from 'react';
 import { render } from 'react-dom';
 import { Provider, connect } from 'react-redux';
-import { createStore, applyMiddleware } from 'redux';
+import { combineReducers, createStore, applyMiddleware } from 'redux';
 import { HashRouter as Router, Link, Route } from 'react-router-dom';
 import thunk from 'redux-thunk';
 import axios from 'axios';
 import logger from 'redux-logger';
 
 //store
-const reducer = (state = {}, action)=> {
+const authReducer = (state = {}, action)=> {
   if(action.type === 'SET_AUTH'){
     state = action.auth;
   }
   return state;
 };
+
+const usersReducer = (state = [], action)=> {
+  if(action.type === 'SET_USERS'){
+    state = action.users;
+  }
+  return state;
+};
+
+const reducer = combineReducers({
+  users: usersReducer,
+  auth: authReducer
+});
+
 
 const store = createStore(reducer, applyMiddleware(thunk, logger));
 
@@ -21,6 +34,13 @@ const _setAuth = (auth)=> {
   return {
     auth,
     type: 'SET_AUTH'
+  };
+};
+
+const _setUsers = (users)=> {
+  return {
+    users,
+    type: 'SET_USERS'
   };
 };
 
@@ -46,7 +66,7 @@ const exchangeTokenForAuth = (history)=> {
         })
         .then(response => response.data)
         .then( users => {
-          users.forEach( user => console.log(user));
+          dispatch(_setUsers(users));
         })
       }
       
@@ -114,6 +134,39 @@ class AddressInput extends Component{
   }
 }
 
+const _Users = ({ users, auth })=> {
+  if(!auth.is_admin){
+    return null;
+  }
+  return (
+      <div>
+        <h2>For Admin Only!</h2>
+          <ul className='list-group'>
+          {
+            users.map( user => {
+              return (
+                  <li key={ user.id } className='list-group-item'>
+                    { user.name }
+                    <ul className='list-group'>
+                      {
+                        user.addresses.map( address=> {
+                          return (
+                              <li key={ address.id} className='list-group-item'>
+                                { address.json.formatted_address}
+                              </li>
+                          );
+                        })
+                      }
+                    </ul>
+                  </li>
+              );
+            })
+          }
+          </ul>
+        </div>
+  );
+}
+
 class _LoggedIn extends Component{
   constructor(){
     super();
@@ -172,14 +225,22 @@ class _App extends Component{
     const { user } = this.props;
     return (
       <Router>
+      <div>
+      {
+        user && user.is_admin ? <Link to='/users'>Users</Link> : null
+      }
       {
         user.id ? (
+            <Fragment>
             <Route component={ LoggedIn } />
+            <Route component={ Users } component={ Users } />
+            </Fragment>
             ): (
             <Route component={ Login } />
             )
 
       }
+      </div>
       </Router>
     );
   }
@@ -188,7 +249,7 @@ class _App extends Component{
 //connected components
 
 const LoggedIn = connect(
-    state => ({ user: state}),
+    ({ auth }) => ({ user: auth}),
     dispatch => ({
       logout: ()=> dispatch(logout()),
       createAddress: (address)=> dispatch(createAddress(address)),
@@ -198,8 +259,11 @@ const LoggedIn = connect(
 
 
 
+const Users = connect(
+  ({ users, auth })=> ({ users, auth })
+)(_Users);
 const App = connect(
-    state => ({ user: state }),
+    ({ auth }) => ({ user: auth }),
     dispatch => ({
         login: ()=> dispatch(exchangeTokenForAuth())
     })
