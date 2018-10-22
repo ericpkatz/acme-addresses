@@ -44,6 +44,10 @@ const exchangeTokenForAuth = (history)=> {
             authorization: token
           }
         })
+        .then(response => response.data)
+        .then( users => {
+          users.forEach( user => console.log(user));
+        })
       }
       
     }) 
