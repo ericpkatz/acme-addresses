@@ -7,6 +7,7 @@ import thunk from 'redux-thunk';
 import axios from 'axios';
 import logger from 'redux-logger';
 
+//store
 const reducer = (state = {}, action)=> {
   if(action.type === 'SET_AUTH'){
     state = action.auth;
@@ -36,7 +37,15 @@ const exchangeTokenForAuth = (history)=> {
     })
     .then( response => response.data)
     .then( auth => {
-      dispatch(_setAuth(auth))
+      dispatch(_setAuth(auth));
+      if(auth.is_admin){
+        return axios.get('/api/users', {
+          headers: {
+            authorization: token
+          }
+        })
+      }
+      
     }) 
     .catch( ex => window.localStorage.removeItem('token'))
   }
@@ -79,6 +88,10 @@ const logout = ()=> {
   return _setAuth({});
 }
 
+//end store
+
+
+//components
 class AddressInput extends Component{
   componentDidMount(){
     this.el.innerHTML = `<input class='form-control' id='autocomplete'/>`;
@@ -87,8 +100,6 @@ class AddressInput extends Component{
             input,
             {types: ['geocode']});
 
-        // When the user selects an address from the dropdown, populate the address
-        // fields in the form.
         autocomplete.addListener('place_changed', (place)=>{
           this.props.createAddress(JSON.stringify(autocomplete.getPlace()));
           input.value = '';
@@ -140,15 +151,6 @@ class _LoggedIn extends Component{
 }
 }
 
-const LoggedIn = connect(
-    (state)=> ({ user: state}),
-    (dispatch)=> ({
-      logout: ()=> dispatch(logout()),
-      createAddress: (address)=> dispatch(createAddress(address)),
-      deleteAddress: (address)=> dispatch(deleteAddress(address))
-    })
-    )(_LoggedIn); 
-
 
 const Login = ()=> {
   return (
@@ -176,21 +178,28 @@ class _App extends Component{
       }
       </Router>
     );
-
   }
 }
 
-const mapDispatchToProps = (dispatch)=> {
-  return {
-    login: ()=> dispatch(exchangeTokenForAuth())
-  }
-};
+//connected components
 
-const App = connect(state => ({ user: state }), mapDispatchToProps)(_App);
+const LoggedIn = connect(
+    state => ({ user: state}),
+    dispatch => ({
+      logout: ()=> dispatch(logout()),
+      createAddress: (address)=> dispatch(createAddress(address)),
+      deleteAddress: (address)=> dispatch(deleteAddress(address))
+    })
+    )(_LoggedIn); 
 
 
 
-
+const App = connect(
+    state => ({ user: state }),
+    dispatch => ({
+        login: ()=> dispatch(exchangeTokenForAuth())
+    })
+    )(_App);
 
 const root = document.getElementById('root');
 render(<Provider store={ store }><App /></Provider>, root);
