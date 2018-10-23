@@ -78,7 +78,7 @@ const exchangeTokenForAuth = (history)=> {
 const createAddress = (address)=> {
   return (dispatch, getState)=> {
     const token = window.localStorage.getItem('token');
-    const auth = getState();
+    const auth = getState().auth;
     return axios.post(`/api/users/${auth.id}/addresses`, {
       json: address
     }, {
@@ -95,7 +95,7 @@ const createAddress = (address)=> {
 const deleteAddress = (address)=> {
   return (dispatch, getState)=> {
     const token = window.localStorage.getItem('token');
-    const auth = getState();
+    const auth = getState().auth;
     return axios.delete(`/api/users/${auth.id}/addresses/${address.id}`,{
       headers: {
         authorization: token
